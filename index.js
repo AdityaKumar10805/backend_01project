@@ -1,0 +1,154 @@
+const express=require('express')
+const users=require('./MOCK_DATA.json')
+const fs=require('fs')
+
+const app=express()
+app.use(express.urlencoded({extended:false}))
+const port=8000
+app.get('/users',(req,res)=>{
+    const html = `
+
+    <ul>
+
+        ${users.map(user => `<li>${user.first_name}</li>`).join('')}
+
+    </ul>
+
+`;
+
+return res.send(html);
+
+});
+
+app.get('/api/users',(req,res)=>{
+    return res.json(users)
+})
+app.get('/api/users/:userID',(req,res)=>{
+    const id=Number(req.params.userID)
+   const user= users.find((user)=>user.id===id)
+   return res.json(user)
+})
+app.post('/api/users',(req,res)=>{
+ const body=req.body
+ users.push({...body,id:users.length+1})
+ fs.writeFile('./MOCK_DATA.json',JSON.stringify(users),(err,data)=>{
+    if(err){
+        return res.status(500).json({ status: "error" });
+    }
+    return res.json({status:"success",id:users.length})
+ })
+
+ //console.log(body)
+
+})
+app.patch('/api/users/:userID', (req, res) => {
+
+    const id = Number(req.params.userID);
+
+    const body = req.body;
+
+    const user = users.find((user) => user.id === id);
+
+    if (!user) {
+
+        return res.status(404).json({
+
+            status: "User not found"
+
+        });
+
+    }
+
+    Object.assign(user, body);
+
+    fs.writeFile(
+
+        './MOCK_DATA.json',
+
+        JSON.stringify(users),
+
+        (err) => {
+
+            if (err) {
+
+                return res.status(500).json({
+
+                    status: "error"
+
+                });
+
+            }
+
+            return res.json({
+
+                status: "success",
+
+                updatedUser: user
+
+            });
+
+        }
+
+    );
+
+});
+app.delete('/api/users/:userID', (req, res) => {
+
+    const id = Number(req.params.userID);
+
+    const userExists = users.find((user) => user.id === id);
+
+    if (!userExists) {
+
+        return res.status(404).json({
+
+            status: "User not found"
+
+        });
+
+    }
+
+    const updatedUsers = users.filter(
+
+        (user) => user.id !== id
+
+    );
+
+    fs.writeFile(
+
+        './MOCK_DATA.json',
+
+        JSON.stringify(updatedUsers),
+
+        (err) => {
+
+            if (err) {
+
+                return res.status(500).json({
+
+                    status: "error"
+
+                });
+
+            }
+
+            return res.json({
+
+                status: "success",
+
+                deletedUserId: id
+
+            });
+
+        }
+
+    );
+
+});
+
+
+
+
+app.listen(port,()=>{
+    console.log(`server started ${port}`)
+})
